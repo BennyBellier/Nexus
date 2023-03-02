@@ -1,21 +1,36 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
-import fs from 'fs';
+import fs, { writeFile } from 'fs';
 import path from 'path';
-import log from 'electron-log';
+import log, { LogMessage } from 'electron-log';
 import sqlite from 'sqlite3';
+import util from 'util';
+
+const isDebug =
+  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 const sqlite3 = sqlite.verbose();
 log.transports.file.level = 'verbose';
-log.transports.file.file = path.join(
-  __dirname,
-  'assets',
-  'log',
-  '${Date.now()}.log'
-);
-log.transports.console.format = '%c{h}:{i}:{s}:{ms} %f %l %m';
-log.transports.file.format =
-  '{y}-{m}-{d} {h}:{i}:{s}:{ms} {z} | {level} | {text}';
+log.transports.console.level = 'info';
+const today = new Date(Date.now()).toISOString().slice(0, -8);
+if (isDebug) {
+  log.transports.file.file = path.join(
+    __dirname,
+    'assets',
+    'log',
+    'current.log'
+  );
+} else {
+  log.transports.file.file = path.join(
+    __dirname,
+    'assets',
+    'log',
+    `${today}.log`
+  );
+}
+
+log.transports.file.format = '{y}-{m}-{d} {h}:{i}:{s}.{ms} [{level}] {text}';
+log.transports.console.useStyles = true;
 
 class Database {
   private db: any;
@@ -46,7 +61,7 @@ class Database {
         genArr.forEach((sql: string) => {
           if (sql !== '') {
             this.db.run(sql);
-            log.verbose('Executed SQL:', sql);
+            log.silly('Executed SQL:', sql);
           }
         });
 
