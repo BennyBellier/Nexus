@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import Database from './competition';
 
 class AppUpdater {
   constructor() {
@@ -106,6 +107,11 @@ const createWindow = async () => {
     shell.openExternal(edata.url);
     return { action: 'deny' };
   });
+
+  const db = new Database(
+    path.join(__dirname, 'assets', 'db', 'competition.db')
+  );
+  db.close();
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
