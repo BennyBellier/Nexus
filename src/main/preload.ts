@@ -3,6 +3,13 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 export type Channels = 'ipc-example';
+export type DBChannels = 'db';
+
+interface DBUpdate {
+  teamDataQuery: unknown[];
+  gameDataQuery: unknown[];
+  leaderboardDataQuery: unknown[];
+}
 
 const electronHandler = {
   ipcRenderer: {
@@ -24,6 +31,30 @@ const electronHandler = {
   },
 };
 
+const databaseHandler = {
+  onUpdate: (func: (teams: [], matches: [], leaderboard: []) => void) => {
+    const subscription = (
+      _event: IpcRendererEvent,
+      teams: [],
+      matches: [],
+      leaderboard: []
+    ) => func(teams, matches, leaderboard);
+    ipcRenderer.on('database:updated', subscription);
+
+    return () => {
+      ipcRenderer.removeListener('database:updated', subscription);
+    };
+  },
+  loadData: () => {
+    ipcRenderer.send('database:loadData');
+  },
+  resetDB: () => {
+    ipcRenderer.send('database:resetDB');
+  },
+};
+
 contextBridge.exposeInMainWorld('electron', electronHandler);
+contextBridge.exposeInMainWorld('database', databaseHandler);
 
 export type ElectronHandler = typeof electronHandler;
+export type DatabaseHandler = typeof databaseHandler;

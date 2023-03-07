@@ -14,7 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import Database from './competition';
+import Database from './database';
 
 class AppUpdater {
   constructor() {
@@ -25,6 +25,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let db: Database;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -102,16 +103,13 @@ const createWindow = async () => {
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
 
+  db = new Database('test.db', mainWindow.webContents);
+
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
     return { action: 'deny' };
   });
-
-  const db = new Database(
-    path.join(__dirname, 'assets', 'db', 'competition.db')
-  );
-  db.close();
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
@@ -121,12 +119,27 @@ const createWindow = async () => {
 /**
  * Add event listeners...
  */
+ipcMain.on('database:loadData', async () => {
+  try {
+    await db.load();
+  } catch (error) {
+    console.log(error);
+  }
+});
+ipcMain.on('database:resetDB', async () => {
+  try {
+    await db.reset();
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
+    db.close();
   }
 });
 
