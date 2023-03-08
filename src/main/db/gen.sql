@@ -4,7 +4,7 @@ CREATE TABLE
     points INTEGER NOT NULL,
     wins INTEGER NOT NULL,
     losses INTEGER NOT NULL
-  );
+  );$
 
 CREATE TABLE
   IF NOT EXISTS played_games (
@@ -15,7 +15,15 @@ CREATE TABLE
     away_score INTEGER NOT NULL,
     FOREIGN KEY (home_team) REFERENCES teams (name),
     FOREIGN KEY (away_team) REFERENCES teams (name)
-  );
+  );$
+
+CREATE TABLE
+  IF NOT EXISTS scoring (
+    on_win INTEGER NOT NULL,
+    on_loss INTEGER NOT NULL
+  );$
+
+INSERT INTO scoring (on_win, on_loss) VALUES (3, 1);$
 
 CREATE VIEW
   IF NOT EXISTS team_stats AS
@@ -26,7 +34,7 @@ SELECT
   losses,
   wins + losses AS games_played
 FROM
-  teams;
+  teams;$
 
 CREATE VIEW
   IF NOT EXISTS game_stats AS
@@ -47,7 +55,7 @@ SELECT
     ELSE NULL
   END AS loser
 FROM
-  played_games;
+  played_games;$
 
 CREATE VIEW
   IF NOT EXISTS leaderboard AS
@@ -62,70 +70,21 @@ FROM
 ORDER BY
   points DESC,
   wins DESC,
-  losses ASC;
+  losses ASC;$
 
-CREATE VIEW
-  IF NOT EXISTS update_team_stats AFTER INSERT ON played_games BEGIN
-UPDATE teams
-SET
-  points = (
-    SELECT
-      SUM(
-        CASE
-          WHEN home_team = NEW.name THEN CASE
-            WHEN home_score > away_score THEN 3
-            WHEN home_score = away_score THEN 1
-            ELSE 0
-          END
-          ELSE CASE
-            WHEN away_score > home_score THEN 3
-            WHEN away_score = home_score THEN 1
-            ELSE 0
-          END
+CREATE TRIGGER IF NOT EXISTS update_team_win_loses AFTER INSERT ON played_games
+    BEGIN
+      UPDATE teams
+      SET wins = wins + CASE
+          WHEN NEW.home_score > NEW.away_score AND name = NEW.home_team THEN 1
+          WHEN NEW.home_score < NEW.away_score AND name = NEW.away_team THEN 1
+          ELSE 0
+        END,
+        losses = losses + CASE
+          WHEN NEW.home_score < NEW.away_score AND name = NEW.home_team THEN 1
+          WHEN NEW.home_score > NEW.away_score AND name = NEW.away_team THEN 1
+          ELSE 0
         END
-      )
-    FROM
-      played_games
-    WHERE
-      home_team = NEW.name
-      OR away_team = NEW.name
-  ),
-  wins = (
-    SELECT
-      COUNT(*)
-    FROM
-      played_games
-    WHERE
-      (
-        (
-          home_team = NEW.name
-          AND home_score > away_score
-        )
-        OR (
-          away_team = NEW.name
-          AND away_score > home_score
-        )
-      )
-  ),
-  losses = (
-    SELECT
-      COUNT(*)
-    FROM
-      played_games
-    WHERE
-      (
-        (
-          home_team = NEW.name
-          AND home_score < away_score
-        )
-        OR (
-          away_team = NEW.name
-          AND away_score < home_score
-        )
-      )
-  )
-WHERE
-  name = NEW.home_team
-  OR name = NEW.away_team;
+      WHERE name = NEW.home_team OR name = NEW.away_team;
+    END;$
 
-END;

@@ -51,6 +51,9 @@ const databaseHandler = {
   resetDB: () => {
     ipcRenderer.send('database:resetDB');
   },
+  dBContent: () => {
+    ipcRenderer.send('database:content');
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

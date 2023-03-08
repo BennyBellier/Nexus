@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { app, WebContents } from 'electron';
 import log from 'electron-log';
-import sqlite from 'sqlite3';
+import sqlite3 from 'sqlite3';
 import path from 'path';
 
 const RESOURCES_PATH = app.isPackaged
@@ -15,7 +15,7 @@ const getAssetPath = (...paths: string[]): string => {
 const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
-const sqlite3 = sqlite.verbose();
+const sqlite = sqlite3.verbose();
 
 log.transports.file.level = 'verbose';
 log.transports.console.level = 'info';
@@ -37,14 +37,14 @@ log.transports.console.useStyles = true;
 export default class Database {
   private dbName: string;
 
-  private db: sqlite.Database;
+  private db: sqlite3.Database;
 
   private web: WebContents;
 
   public constructor(dbName: string, web: WebContents) {
     this.dbName = getAssetPath('db', dbName);
     this.web = web;
-    this.db = new sqlite3.Database(this.dbName, (err) => {
+    this.db = new sqlite.Database(this.dbName, (err) => {
       if (err) {
         log.error('Database creation:', err.message);
       }
@@ -55,7 +55,7 @@ export default class Database {
 
   private setupDatabase(): void {
     const sql = fs.readFileSync(path.join(__dirname, 'db', 'gen.sql'), 'utf8');
-    const sqlArr = sql.split(';\n');
+    const sqlArr = sql.split('$\n');
 
     this.db.serialize(() => {
       this.db.run('PRAGMA foreign_keys = ON');
@@ -64,7 +64,7 @@ export default class Database {
         if (s !== '') {
           this.db.run(s, (err) => {
             if (err) {
-              log.error('Database setup:', err.message);
+              log.error('Database setup:', s, '\n', err.message);
             }
           });
         }
@@ -83,16 +83,16 @@ export default class Database {
     });
   }
 
-  public query(sql: string): Promise<any> {
+  public async query(sql: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.db.all(sql, (err, rows) => {
+      this.db.all(sql, async (err, rows) => {
         if (err) {
-          log.error('Database query:', err.message);
+          await log.error('Database query:', sql, '\n', err.message);
           reject(err);
         }
-        log.info('Database query:', sql);
-        log.verbose('Database query result:', rows);
-        resolve(rows);
+        await log.info('Database query:', sql);
+        await log.verbose('Database query result:', rows);
+        await resolve(rows);
       });
     });
   }
@@ -106,7 +106,7 @@ export default class Database {
     return { teams, matches, leaderboard };
   }
 
-  public addTeam(
+  public async addTeam(
     name: string,
     points: number = 0,
     wins: number = 0,
@@ -120,7 +120,18 @@ export default class Database {
       losses,
       (err: any) => {
         if (err) {
-          log.error('Team insertion:', err.message);
+          log.error(
+            'Team insertion: ',
+            name,
+            ' : ',
+            points,
+            '/',
+            wins,
+            '/',
+            losses,
+            '\n',
+            err.message
+          );
           return;
         }
         log.info('Added team', name, 'successfully.');
@@ -129,7 +140,7 @@ export default class Database {
     // this.web.send('database:updated', this.getData());
   }
 
-  public addPLayedMatch(
+  public async addPLayedMatch(
     homeTeam: string,
     awayTeam: string,
     homeScore: number,
@@ -143,7 +154,17 @@ export default class Database {
       awayScore,
       (err: any) => {
         if (err) {
-          log.error('Match insertion:', err.message);
+          log.error(
+            'Match insertion: ',
+            homeTeam,
+            ':',
+            homeScore,
+            'vs',
+            awayTeam,
+            ':',
+            awayScore,
+            err.message
+          );
           return;
         }
         log.info(
@@ -165,23 +186,30 @@ export default class Database {
   public async reset() {
     await this.db.run('DROP TABLE IF EXISTS played_games');
     await this.db.run('DROP TABLE IF EXISTS teams');
+    await this.db.run('DROP TABLE IF EXISTS scoring');
+    await this.db.run('DROP VIEW IF EXISTS team_stats');
+    await this.db.run('DROP VIEW IF EXISTS game_stats');
+    await this.db.run('DROP VIEW IF EXISTS leaderboard');
+    await this.db.run('DROP TRIGGER IF EXISTS update_team_win_loses');
+    await this.db.run('DROP TRIGGER IF EXISTS update_team_points');
+    await this.db.run('DROP TRIGGER IF EXISTS update_scoring');
+    await log.info('Database', this.dbName, 'reset complete.');
     await this.setupDatabase();
   }
 
-  public async load() {
-    await this.addTeam('Team 1');
-    await this.addTeam('Team 2');
-    await this.addTeam('Team 3');
-    await this.addTeam('Team 4');
-
-    await this.addPLayedMatch('Team 1', 'Team 2', 1, 2);
-    await this.addPLayedMatch('Team 3', 'Team 4', 3, 4);
-    await this.addPLayedMatch('Team 1', 'Team 3', 1, 3);
-    await this.addPLayedMatch('Team 2', 'Team 4', 2, 4);
-    await this.addPLayedMatch('Team 1', 'Team 4', 1, 4);
-    await this.addPLayedMatch('Team 2', 'Team 3', 2, 3);
-
-    await this.updated();
+  public load() {
+    this.query('UPDATE scoring SET on_win = 1, on_loss = 0')
+      .then(() => this.addTeam('Team 1'))
+      .then(() => this.addTeam('Team 2'))
+      .then(() => this.addTeam('Team 3'))
+      .then(() => this.addTeam('Team 4'))
+      .then(() => this.addPLayedMatch('Team 1', 'Team 2', 1, 2))
+      .then(() => this.addPLayedMatch('Team 3', 'Team 4', 3, 4))
+      .then(() => this.addPLayedMatch('Team 1', 'Team 3', 1, 3))
+      .then(() => this.addPLayedMatch('Team 2', 'Team 4', 2, 4))
+      .then(() => this.addPLayedMatch('Team 1', 'Team 4', 1, 4))
+      .then(() => this.updated())
+      .catch((err) => log.error(err));
   }
 
   private async updated() {
@@ -194,5 +222,9 @@ export default class Database {
     await log.info(games);
     await log.info(lead);
     await this.web.send('database:updated', teams, games, lead);
+  }
+
+  public getContent() {
+    this.updated();
   }
 }

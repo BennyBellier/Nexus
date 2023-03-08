@@ -133,6 +133,13 @@ ipcMain.on('database:resetDB', async () => {
     console.log(error);
   }
 });
+ipcMain.on('database:content', async () => {
+  try {
+    await db.getContent();
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even

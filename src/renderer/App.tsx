@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 // import icon from '../../assets/icon.svg';
+import { ProSidebarProvider } from 'react-pro-sidebar';
 import './App.css';
 
 type TeamData = {
@@ -169,7 +170,6 @@ function Tables() {
   useEffect(() => {
     return window.database.onUpdate(
       (teams: [], matches: [], leaderboard: []) => {
-        console.log(teams, matches, leaderboard);
         setTeamLeadData(teams);
         setGameStatData(matches);
         setLeaderboardData(leaderboard);
@@ -182,11 +182,26 @@ function Tables() {
       <TeamTable teams={teamData} />
       <GameStatTable games={gameData} />
       <LeaderboardTable teams={leaderboardData} />
-      <button type="button" onClick={() => window.database.loadData()}>
+      <button
+        type="button"
+        className="load"
+        onClick={() => window.database.loadData()}
+      >
         Load data
       </button>
-      <button type="button" onClick={() => window.database.resetDB()}>
+      <button
+        type="button"
+        className="reset"
+        onClick={() => window.database.resetDB()}
+      >
         Reset db
+      </button>
+      <button
+        type="button"
+        className="update"
+        onClick={() => window.database.dBContent()}
+      >
+        Update display
       </button>
     </div>
   );
@@ -195,9 +210,11 @@ function Tables() {
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Tables />} />
-      </Routes>
+      <ProSidebarProvider>
+        <Routes>
+          <Route path="/" element={<Tables />} />
+        </Routes>
+      </ProSidebarProvider>
     </Router>
   );
 }

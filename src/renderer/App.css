@@ -26,7 +26,7 @@ a:hover {
 .tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr 50px;
+  grid-template-rows: 1fr 1fr 50px 50px;
   height: 100%;
   width: 100%;
   gap: 20px;
@@ -52,12 +52,18 @@ table thead tr th {
   grid-row: 2 / 3;
 }
 
-button {
+.load {
   grid-row: 3 / 4;
   grid-column: 1 / 2;
 }
 
-button:last-child {
+.reset {
   grid-row: 3 / 4;
   grid-column: 2 / 3;
+}
+
+
+.update {
+  grid-row: 4 / 5;
+  grid-column: 1 / 3;
 }
