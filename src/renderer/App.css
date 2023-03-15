@@ -2,68 +2,8 @@
  * @NOTE: Prepend a `~` to css file paths that are in your node_modules
  *        See https://github.com/webpack-contrib/sass-loader#imports
  */
-body {
-  position: relative;
-  color: white;
-  height: 100vh;
-  background: linear-gradient(200.96deg,
-      #fedc2a -29.09%,
-      #dd5789 51.77%,
-      #7a2c9e 129.35%);
-  font-family: sans-serif;
-  overflow-y: hidden;
-}
-
-a:hover {
-  opacity: 1;
-  text-decoration: none;
-}
-
-#root {
-  height: 100%;
-}
-
-.tables {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr 50px 50px;
-  height: 100%;
-  width: 100%;
-  gap: 20px;
-}
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-  height: max-content;
-}
-
-table thead {
-  border-bottom: 1px solid #fff;
-}
-
-table thead tr th {
-  padding: 10px;
-  text-align: left;
-}
-
-.last {
-  grid-column: 1 / 3;
-  grid-row: 2 / 3;
-}
-
-.load {
-  grid-row: 3 / 4;
-  grid-column: 1 / 2;
-}
-
-.reset {
-  grid-row: 3 / 4;
-  grid-column: 2 / 3;
-}
-
-
-.update {
-  grid-row: 4 / 5;
-  grid-column: 1 / 3;
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }

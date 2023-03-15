@@ -1,6 +1,7 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { DashboardDescription } from '../renderer/Utils/Types';
 
 export type Channels = 'ipc-example';
 export type DBChannels = 'db';
@@ -32,7 +33,7 @@ const electronHandler = {
 };
 
 const databaseHandler = {
-  onUpdate: (func: (teams: [], matches: [], leaderboard: []) => void) => {
+  dbUpdated: (func: (teams: [], matches: [], leaderboard: []) => void) => {
     const subscription = (
       _event: IpcRendererEvent,
       teams: [],
@@ -56,8 +57,32 @@ const databaseHandler = {
   },
 };
 
+const nexusHandler = {
+  getAssetspath: (func: (file: string) => string) => {
+    const subscription = (_event: IpcRendererEvent, file: string) => func(file);
+    ipcRenderer.on('nexus:getAssetspath', subscription);
+
+    return () => {
+      ipcRenderer.removeListener('nexus:getAssetspath', subscription);
+    };
+  },
+  descriptionUpdated: (func: (desc: DashboardDescription) => void) => {
+    const subscription = (
+      _event: IpcRendererEvent,
+      desc: DashboardDescription
+    ) => func(desc);
+    ipcRenderer.on('nexus:descriptionUpdated', subscription);
+
+    return () => {
+      ipcRenderer.removeListener('nexus:descriptionUpdated', subscription);
+    };
+  },
+};
+
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('database', databaseHandler);
+contextBridge.exposeInMainWorld('nexus', nexusHandler);
 
 export type ElectronHandler = typeof electronHandler;
 export type DatabaseHandler = typeof databaseHandler;
+export type NexusHandler = typeof nexusHandler;

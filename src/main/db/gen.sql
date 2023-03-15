@@ -87,4 +87,3 @@ CREATE TRIGGER IF NOT EXISTS update_team_win_loses AFTER INSERT ON played_games
         END
       WHERE name = NEW.home_team OR name = NEW.away_team;
     END;$
-

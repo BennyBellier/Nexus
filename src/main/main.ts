@@ -12,9 +12,9 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import MenuBuilder from './menu';
+// import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import Database from './database';
+// import Database from './database';
 
 class AppUpdater {
   constructor() {
@@ -25,7 +25,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-let db: Database;
+// let db: Database;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -40,6 +40,10 @@ if (process.env.NODE_ENV === 'production') {
 
 const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../../assets');
 
 if (isDebug) {
   require('electron-debug')();
@@ -63,10 +67,6 @@ const createWindow = async () => {
     await installExtensions();
   }
 
-  const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../../assets');
-
   const getAssetPath = (...paths: string[]): string => {
     return path.join(RESOURCES_PATH, ...paths);
   };
@@ -75,15 +75,17 @@ const createWindow = async () => {
     show: false,
     width: 1024,
     height: 728,
+    title: `Nexus`,
     icon: getAssetPath('icon.png'),
     webPreferences: {
+      nodeIntegration: true,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow.loadURL(resolveHtmlPath('/'));
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -100,10 +102,8 @@ const createWindow = async () => {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
-
-  db = new Database('test.db', mainWindow.webContents);
+  // const menuBuilder = new MenuBuilder(mainWindow);
+  // menuBuilder.buildMenu();
 
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
@@ -119,34 +119,37 @@ const createWindow = async () => {
 /**
  * Add event listeners...
  */
-ipcMain.on('database:loadData', async () => {
-  try {
-    await db.load();
-  } catch (error) {
-    console.log(error);
-  }
-});
-ipcMain.on('database:resetDB', async () => {
-  try {
-    await db.reset();
-  } catch (error) {
-    console.log(error);
-  }
-});
-ipcMain.on('database:content', async () => {
-  try {
-    await db.getContent();
-  } catch (error) {
-    console.log(error);
-  }
-});
+async function handleGetAssetPath(event: any, ...paths: string[]) {
+  event.returnValue = path.join(RESOURCES_PATH, ...paths);
+}
+
+// ipcMain.on('database:loadData', async () => {
+//   try {
+//     await db.load();
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
+// ipcMain.on('database:resetDB', async () => {
+//   try {
+//     await db.reset();
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
+// ipcMain.on('database:content', async () => {
+//   try {
+//     await db.getContent();
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
-    db.close();
   }
 });
 
@@ -154,6 +157,7 @@ app
   .whenReady()
   .then(() => {
     createWindow();
+    ipcMain.handle('getAssetPath', handleGetAssetPath);
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
