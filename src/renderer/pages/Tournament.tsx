@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Page3() {
+export default function Tournament() {
   return (
     <div>
       <h1>Page 3</h1>

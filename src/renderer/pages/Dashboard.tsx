@@ -182,6 +182,9 @@ export default function Dashboard() {
         <button
           type="button"
           className="4h-fit px-4 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 hover:scale-[99%] duration-200 hover:border-cyan-200 ease-in-out flex items-center gap-2"
+          onClick={() => {
+            console.log("Création d'un tournois");
+          }}
         >
           <AddRounded /> Créer un Tournois
         </button>
