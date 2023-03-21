@@ -54,3 +54,20 @@ export type DashboardDescription = {
   numberOfMatch: number;
   settings: SettingsDescription;
 };
+
+export type AthleteData = {
+  firstname: string;
+  lastname: string;
+  age: number;
+  team: string;
+};
+
+export type Athlete = {
+  firstname: string;
+  lastname: string;
+  age: number;
+};
+
+export type AthletePerTeamDic = {
+  [key: string]: Athlete[];
+};
