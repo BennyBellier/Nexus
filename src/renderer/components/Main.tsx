@@ -27,9 +27,13 @@ export default function Main({
   let searchbar = null;
   if (searchbarCaller != null) {
     searchbar = (
-      <div className="border border-slate-400 p-1 rounded-lg w-fit">
-        <TbSearch className="text-slate-400" />
-        <input type="text" onKeyDown={handleKeyDown} />
+      <div className="border border-slate-400 p-1 rounded-lg w-max grid grid-cols-[1fr] items-center">
+        <TbSearch className="absolute text-slate-400 w-4 h-4 z-0" />
+        <input
+          type="text"
+          onKeyDown={handleKeyDown}
+          className="bg-transparent pl-5 outline-none"
+        />
       </div>
     );
   }

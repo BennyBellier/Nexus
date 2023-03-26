@@ -1,5 +1,6 @@
 import React from 'react';
 import 'tailwindcss/tailwind.css';
+import 'tailwind-scrollbar';
 import { MdNoPhotography } from 'react-icons/md';
 import Main from '../components/Main';
 
@@ -298,9 +299,9 @@ function TableEntry({ team, index }: any) {
   );
 
   return (
-    <div className="flex flex-row gap-10 items-center pl-8 w-full">
-      {index}
-      <div className="flex flex-row justify-between items-center border border-slate-900 rounded-full h-10 py-1 pl-3 w-full">
+    <div className="flex flex-row gap-5 items-center pl-3">
+      <span className="w-12 text-center">{index}</span>
+      <div className="flex flex-row justify-between items-center border border-slate-900 rounded-full h-10 py-1 w-full pl-3">
         <div className="flex flex-row gap-2 items-center">
           {img}
           {team.name}
@@ -318,7 +319,7 @@ function TableEntry({ team, index }: any) {
 
 function Table({ lead }: any) {
   return (
-    <div className="flex flex-row gap-5 h-full w-full pl-1 overflow-y-scroll overflow-x-hidden">
+    <div className="flex flex-row gap-5 h-full w-full pl-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-rounded-large scrollbar-thumb-slate-400">
       <div
         id="Leaderboard"
         className="flex flex-col gap-6 w-full pr-2 after:bg-transparent after:h-1 after:content-['*'] after:text-transparent after:select-none"

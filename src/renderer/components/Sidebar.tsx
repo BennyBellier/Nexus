@@ -8,7 +8,7 @@ import { IoSettingsOutline } from 'react-icons/io5';
 
 function SidebarItem({ icon, text, to, keyName }: any) {
   return (
-    <li className="list-none w-full flex items-center h-14">
+    <li className="list-none w-full flex items-center h-14 outline-none">
       <NavLink
         to={to}
         className="group text-lg flex items-center gap-3 w-full h-full p-2.5
@@ -28,7 +28,7 @@ export default function NexusSidebar() {
   return (
     <aside
       id="Sidebar"
-      className="w-60 flex flex-col h-screen bg-transparent border-r border-r-slante-800 overflow-hidden p-4 justify-between"
+      className="w-60 flex flex-col h-screen bg-transparent border-r border-r-slante-800 overflow-hidden p-4 justify-between z-50"
     >
       <nav className="flex flex-col gap-2.5">
         <SidebarItem
