@@ -1,12 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import {
-  DashboardRounded,
-  LeaderboardRounded,
-  GroupRounded,
-  GamesRounded,
-  AccountTreeRounded,
-  SettingsApplicationsRounded,
-} from '@mui/icons-material';
+import { RxDashboard } from 'react-icons/rx';
+import { BiBarChartSquare } from 'react-icons/bi';
+import { AiOutlineTeam } from 'react-icons/ai';
+import { RiOrganizationChart } from 'react-icons/ri';
+import { MdOutlineGames } from 'react-icons/md';
+import { IoSettingsOutline } from 'react-icons/io5';
 
 function SidebarItem({ icon, text, to, keyName }: any) {
   return (
@@ -34,33 +32,33 @@ export default function NexusSidebar() {
     >
       <nav className="flex flex-col gap-2.5">
         <SidebarItem
-          icon={<DashboardRounded />}
+          icon={<RxDashboard className="" />}
           text="Tableau de bord"
           to="/"
           keyName="dashboard"
         />
-        <SidebarItem icon={<GroupRounded />} text="Équipes" to="teams" />
+        <SidebarItem icon={<AiOutlineTeam />} text="Équipes" to="teams" />
         <SidebarItem
-          icon={<LeaderboardRounded />}
+          icon={<BiBarChartSquare className="" />}
           text="Classement"
           to="leaderboard"
           keyName="leaderboard"
         />
         <SidebarItem
-          icon={<AccountTreeRounded />}
+          icon={<RiOrganizationChart className="" />}
           text="Tournois"
           to="tournament"
           keyName="tournament"
         />
         <SidebarItem
-          icon={<GamesRounded />}
+          icon={<MdOutlineGames className="" />}
           text="Match"
           to="match"
           keyName="match"
         />
       </nav>
       <SidebarItem
-        icon={<SettingsApplicationsRounded />}
+        icon={<IoSettingsOutline className="" />}
         text="Paramètres"
         to="settings"
         keyName="settings"
