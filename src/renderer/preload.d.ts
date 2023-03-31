@@ -1,4 +1,9 @@
-import { ElectronHandler, DatabaseHandler, NexusHandler } from 'main/preload';
+import {
+  ElectronHandler,
+  DatabaseHandler,
+  NexusHandler,
+  MatchHandler,
+} from 'main/preload';
 
 declare global {
   // eslint-disable-next-line no-unused-vars
@@ -6,6 +11,7 @@ declare global {
     electron: ElectronHandler;
     database: DatabaseHandler;
     nexus: NexusHandler;
+    match: MatchHandler;
   }
 }
 

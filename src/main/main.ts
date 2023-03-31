@@ -1,3 +1,4 @@
+import { TCPServer } from './tcp';
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
 /**
@@ -12,8 +13,10 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import ChaseTagManager from './Match';
 // import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { getLocalIP } from './tcp';
 // import Database from './database';
 
 class AppUpdater {
@@ -26,6 +29,7 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 // let db: Database;
+let server: TCPServer;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -104,6 +108,11 @@ const createWindow = async () => {
 
   // const menuBuilder = new MenuBuilder(mainWindow);
   // menuBuilder.buildMenu();
+
+  const match = new ChaseTagManager(mainWindow.webContents);
+  server = new TCPServer(2121);
+
+  getLocalIP();
 
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {

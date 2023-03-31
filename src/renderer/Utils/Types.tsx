@@ -71,3 +71,51 @@ export type Athlete = {
 export type AthletePerTeamDic = {
   [key: string]: Athlete[];
 };
+
+export const HOME = 0;
+export const AWAY = 1;
+
+export enum GameState {
+  WAITING,
+  PLAYING,
+  ENDED,
+}
+
+export enum MatchStatus {
+  NOT_READY,
+  READY,
+  STARTED,
+  SUDDEN_DEATH,
+  ENDED,
+}
+
+export interface MatchInitData {
+  homeTeam: string;
+  awayTeam: string;
+}
+
+export interface Score {
+  score: number;
+  faults: number;
+  timeout: number;
+}
+
+export interface RoundResult {
+  escaped: boolean;
+  winner?: typeof HOME | typeof AWAY;
+}
+
+export interface MatchScoreUpdate {
+  matchStatus: MatchStatus;
+  gameState: GameState;
+  home: Score;
+  away: Score;
+  currentRound: number;
+  result: RoundResult;
+  teamRunner: typeof HOME | typeof AWAY;
+}
+
+export interface MatchScore {
+  HOME: Score;
+  AWAY: Score;
+}

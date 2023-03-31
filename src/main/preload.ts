@@ -1,7 +1,11 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import { DashboardDescription } from '../renderer/Utils/Types';
+import {
+  DashboardDescription,
+  MatchInitData,
+  MatchScoreUpdate,
+} from '../renderer/Utils/Types';
 
 export type Channels = 'ipc-example';
 export type DBChannels = 'db';
@@ -57,6 +61,41 @@ const databaseHandler = {
   },
 };
 
+const matchHandler = {
+  startStop: () => {
+    ipcRenderer.send('match:start-stop');
+  },
+  nextRound: () => {
+    ipcRenderer.send('match:next-round');
+  },
+  loaded: () => {
+    ipcRenderer.send('match:pageLoaded');
+  },
+  init: (data: MatchInitData) => {
+    ipcRenderer.send('match:init', data);
+  },
+  scoreUpdated: (func: (score: MatchScoreUpdate) => void) => {
+    const subscription = (_event: IpcRendererEvent, score: any) => func(score);
+    ipcRenderer.on('match:score-update', subscription);
+
+    return () => {
+      ipcRenderer.removeListener('match:score-update', subscription);
+    };
+  },
+  timeUpdated: (func: (time: number, percentage: number) => void) => {
+    const subscription = (
+      _event: IpcRendererEvent,
+      time: number,
+      percentage: number
+    ) => func(time, percentage);
+    ipcRenderer.on('match:time', subscription);
+
+    return () => {
+      ipcRenderer.removeListener('match:time', subscription);
+    };
+  },
+};
+
 const nexusHandler = {
   getAssetspath: (func: (file: string) => string) => {
     const subscription = (_event: IpcRendererEvent, file: string) => func(file);
@@ -82,7 +121,9 @@ const nexusHandler = {
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('database', databaseHandler);
 contextBridge.exposeInMainWorld('nexus', nexusHandler);
+contextBridge.exposeInMainWorld('match', matchHandler);
 
 export type ElectronHandler = typeof electronHandler;
 export type DatabaseHandler = typeof databaseHandler;
 export type NexusHandler = typeof nexusHandler;
+export type MatchHandler = typeof matchHandler;

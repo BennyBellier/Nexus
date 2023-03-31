@@ -13,6 +13,7 @@ export default function Main({
   filterDefinition,
   printActivated,
   infoContent,
+  other,
 }: any) {
   const handleKeyDown = (event: any) => {
     if (event.key === 'Enter') {
@@ -84,6 +85,7 @@ export default function Main({
           {info}
         </div>
         <div className="w-[50%] flex flex-row items-center justify-end gap-10 pr-5">
+          {other}
           {searchbar}
           {filter}
           {print}
