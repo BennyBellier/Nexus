@@ -1,4 +1,4 @@
-import { PodiumData } from '../Utils/Types';
+import { PodiumData } from '../../main/Utils/Types';
 
 export default function Podium({ first, second, third }: PodiumData) {
   return (

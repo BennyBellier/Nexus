@@ -16,7 +16,7 @@ import {
   GameData,
   GameQuery,
   DashboardDescription,
-} from '../Utils/Types';
+} from '../../main/Utils/Types';
 
 function DashboardElement({ children, className, title }: any) {
   return (

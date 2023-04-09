@@ -72,8 +72,8 @@ export type AthletePerTeamDic = {
   [key: string]: Athlete[];
 };
 
-export const HOME = 0;
-export const AWAY = 1;
+export const HOME = 1;
+export const AWAY = 2;
 
 export enum GameState {
   WAITING,

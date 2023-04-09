@@ -12,27 +12,7 @@ const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);
 };
 
-const isDebug =
-  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-
 const sqlite = sqlite3.verbose();
-
-log.transports.file.level = 'verbose';
-log.transports.console.level = 'info';
-const today = new Date(Date.now()).toISOString().slice(0, -8);
-if (isDebug) {
-  const currentLogExist = fs.existsSync(getAssetPath('logs', 'current.log'));
-  if (currentLogExist) {
-    fs.unlinkSync(getAssetPath('logs', 'current.log'));
-    log.info('Deleted current.log');
-  }
-  log.transports.file.file = getAssetPath('logs', 'current.log');
-} else {
-  log.transports.file.file = getAssetPath('logs', `${today}.log`);
-}
-
-log.transports.file.format = '{y}-{m}-{d} {h}:{i}:{s}.{ms} [{level}] {text}';
-log.transports.console.useStyles = true;
 
 export default class Database {
   private dbName: string;

@@ -5,7 +5,7 @@ import {
   DashboardDescription,
   MatchInitData,
   MatchScoreUpdate,
-} from '../renderer/Utils/Types';
+} from './Utils/Types';
 
 export type Channels = 'ipc-example';
 export type DBChannels = 'db';
@@ -82,22 +82,30 @@ const matchHandler = {
       ipcRenderer.removeListener('match:score-update', subscription);
     };
   },
-  timeUpdated: (func: (time: number, percentage: number) => void) => {
+  timeUpdated: (
+    func: (time: number, percentage: number) => void,
+    disableIPCListener = false
+  ) => {
     const subscription = (
       _event: IpcRendererEvent,
       time: number,
       percentage: number
     ) => func(time, percentage);
-    ipcRenderer.on('match:time', subscription);
+
+    if (!disableIPCListener) {
+      ipcRenderer.on('match:time', subscription);
+    }
 
     return () => {
-      ipcRenderer.removeListener('match:time', subscription);
+      if (!disableIPCListener) {
+        ipcRenderer.removeListener('match:time', subscription);
+      }
     };
   },
 };
 
 const nexusHandler = {
-  getAssetspath: (func: (file: string) => string) => {
+  getAssetsPath: (func: (file: string) => string) => {
     const subscription = (_event: IpcRendererEvent, file: string) => func(file);
     ipcRenderer.on('nexus:getAssetspath', subscription);
 
@@ -114,6 +122,16 @@ const nexusHandler = {
 
     return () => {
       ipcRenderer.removeListener('nexus:descriptionUpdated', subscription);
+    };
+  },
+  tcp_ip: (): Promise<string> => ipcRenderer.invoke('tcp:ip'),
+  tcp_clientsUpdated: (func: (clients: number) => void) => {
+    const subscription = (_event: IpcRendererEvent, clients: number) =>
+      func(clients);
+    ipcRenderer.on('tcp:clients', subscription);
+
+    return () => {
+      ipcRenderer.removeListener('tcp:clients', subscription);
     };
   },
 };

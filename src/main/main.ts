@@ -1,4 +1,3 @@
-import { TCPServer } from './tcp';
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
 /**
@@ -10,13 +9,14 @@ import { TCPServer } from './tcp';
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
+import fs from 'fs';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import ChaseTagManager from './Match';
 // import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import { getLocalIP } from './tcp';
+import { TCPServer, getLocalIP } from './tcp';
 // import Database from './database';
 
 class AppUpdater {
@@ -52,6 +52,25 @@ const RESOURCES_PATH = app.isPackaged
 if (isDebug) {
   require('electron-debug')();
 }
+
+log.transports.file.level = 'verbose';
+log.transports.console.level = 'info';
+const today = new Date(Date.now()).toISOString().slice(0, -8);
+if (isDebug) {
+  const currentLogExist = fs.existsSync(
+    path.join(RESOURCES_PATH, 'logs', 'current.log')
+  );
+  if (currentLogExist) {
+    fs.unlinkSync(path.join(RESOURCES_PATH, 'logs', 'current.log'));
+    log.info('Deleted current.log');
+  }
+  log.transports.file.file = path.join(RESOURCES_PATH, 'logs', 'current.log');
+} else {
+  log.transports.file.file = path.join(RESOURCES_PATH, 'logs', `${today}.log`);
+}
+
+log.transports.file.format = '{y}-{m}-{d} {h}:{i}:{s}.{ms} [{level}] {text}';
+log.transports.console.useStyles = true;
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -110,7 +129,7 @@ const createWindow = async () => {
   // menuBuilder.buildMenu();
 
   const match = new ChaseTagManager(mainWindow.webContents);
-  server = new TCPServer(2121);
+  server = new TCPServer(2121, mainWindow.webContents);
 
   getLocalIP();
 
@@ -154,11 +173,21 @@ async function handleGetAssetPath(event: any, ...paths: string[]) {
 //   }
 // });
 
+ipcMain.handle('tcp:ip', async () => {
+  try {
+    return getLocalIP();
+  } catch (error) {
+    console.log(error);
+  }
+  return '';
+});
+
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
+    server.stop();
   }
 });
 

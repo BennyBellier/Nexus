@@ -1,14 +1,5 @@
 import { ipcMain, WebContents } from 'electron';
-import {
-  MatchStatus,
-  GameState,
-  HOME,
-  AWAY,
-  // MatchInitData,
-  MatchScoreUpdate,
-  RoundResult,
-  MatchScore,
-} from '../renderer/Utils/Types';
+import * as NexusTypes from './Utils/Types';
 
 class ChaseTagManager {
   private timer: any = null;
@@ -19,18 +10,20 @@ class ChaseTagManager {
 
   private currentRound: number = 1;
 
-  private teamRunner: typeof HOME | typeof AWAY = AWAY;
+  private teamRunner: typeof NexusTypes.HOME | typeof NexusTypes.AWAY =
+    NexusTypes.AWAY;
 
-  private gameState: GameState = GameState.WAITING;
+  private gameState: NexusTypes.GameState = NexusTypes.GameState.WAITING;
 
-  private matchStatus: MatchStatus = MatchStatus.NOT_READY;
+  private matchStatus: NexusTypes.MatchStatus =
+    NexusTypes.MatchStatus.NOT_READY;
 
-  private roundResult: RoundResult = {
+  private roundResult: NexusTypes.RoundResult = {
     escaped: false,
-    winner: HOME,
+    winner: NexusTypes.HOME,
   };
 
-  private score: MatchScore = {
+  private score: NexusTypes.MatchScore = {
     HOME: { score: 0, faults: 0, timeout: 0 },
     AWAY: { score: 0, faults: 0, timeout: 0 },
   };
@@ -44,11 +37,12 @@ class ChaseTagManager {
     ipcMain.on('match:next-round', this.handleNextRound.bind(this));
     ipcMain.on('match:init', this.initMatch.bind(this));
     ipcMain.on('match:pageLoaded', this.sendScoreUpdate.bind(this));
+    ipcMain.on('tcp:stop', this.handleStopMatch.bind(this));
     this.webContents = webContents;
   }
 
-  private initMatch(): void {
-    if (this.matchStatus !== MatchStatus.NOT_READY) return;
+  public initMatch(): void {
+    if (this.matchStatus !== NexusTypes.MatchStatus.NOT_READY) return;
 
     this.score = {
       HOME: { score: 0, faults: 0, timeout: 0 },
@@ -56,30 +50,36 @@ class ChaseTagManager {
     };
 
     this.webContents.send('match:score-update', {
-      matchStatus: MatchStatus.READY,
-      gameState: GameState.WAITING,
+      matchStatus: NexusTypes.MatchStatus.READY,
+      gameState: NexusTypes.GameState.WAITING,
       score: this.score,
     });
-    this.matchStatus = MatchStatus.READY;
+    this.matchStatus = NexusTypes.MatchStatus.READY;
   }
 
-  private handleStartStopMatch(): void {
-    if (this.gameState === GameState.WAITING) {
-      this.gameState = GameState.PLAYING;
+  public handleStartStopMatch(): void {
+    if (this.gameState === NexusTypes.GameState.WAITING) {
+      this.gameState = NexusTypes.GameState.PLAYING;
       this.startRound();
-    } else if (this.gameState === GameState.PLAYING) {
-      this.gameState = GameState.ENDED;
+    } else if (this.gameState === NexusTypes.GameState.PLAYING) {
+      this.gameState = NexusTypes.GameState.ENDED;
       this.stopRound();
       this.sendScoreUpdate();
     }
   }
 
+  private handleStopMatch(): void {
+    if (this.gameState === NexusTypes.GameState.PLAYING)
+      this.handleStartStopMatch();
+  }
+
   private handleNextRound(): void {
-    if (this.gameState === GameState.ENDED) {
+    if (this.gameState === NexusTypes.GameState.ENDED) {
       this.sendTimeUpdate(0);
-      this.gameState = GameState.WAITING;
+      this.gameState = NexusTypes.GameState.WAITING;
       this.currentRound += 1;
-      this.teamRunner = this.currentRound % 2 === 0 ? AWAY : HOME;
+      this.teamRunner =
+        this.currentRound % 2 === 0 ? NexusTypes.AWAY : NexusTypes.HOME;
       this.sendScoreUpdate();
     }
   }
@@ -109,14 +109,14 @@ class ChaseTagManager {
     if (timeElapsedInCentiseconds >= 2000) {
       this.stopRound();
       this.handleRoundEnded({ escaped: true });
-      this.gameState = GameState.ENDED;
+      this.gameState = NexusTypes.GameState.ENDED;
     }
   }
 
-  private handleRoundEnded(roundResult: RoundResult): void {
+  private handleRoundEnded(roundResult: NexusTypes.RoundResult): void {
     if (roundResult.escaped) {
       this.roundResult.escaped = true;
-      if (this.teamRunner === HOME) this.score.AWAY.score += 1;
+      if (this.teamRunner === NexusTypes.HOME) this.score.AWAY.score += 1;
       else this.score.HOME.score += 1;
       this.sendScoreUpdate();
       this.roundResult.escaped = false;
@@ -124,7 +124,7 @@ class ChaseTagManager {
   }
 
   private sendScoreUpdate(): void {
-    const scoreUpdate: MatchScoreUpdate = {
+    const scoreUpdate: NexusTypes.MatchScoreUpdate = {
       matchStatus: this.matchStatus,
       gameState: this.gameState,
       home: this.score.HOME,
@@ -134,6 +134,22 @@ class ChaseTagManager {
       teamRunner: this.teamRunner,
     };
     this.webContents.send('match:score-update', scoreUpdate);
+  }
+
+  public getMatchStatus(): NexusTypes.MatchStatus {
+    return this.matchStatus;
+  }
+
+  public getMatchScore(): NexusTypes.MatchScore {
+    return this.score;
+  }
+
+  public setMatchStatus(status: NexusTypes.MatchStatus): void {
+    this.matchStatus = status;
+  }
+
+  public getCurrentRound(): number {
+    return this.currentRound;
   }
 }
 
