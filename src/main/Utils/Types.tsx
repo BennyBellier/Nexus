@@ -1,3 +1,5 @@
+/* eslint-disable no-shadow */
+/* eslint-disable no-unused-vars */
 export type TeamData = {
   name: string;
   points: number;
@@ -75,8 +77,8 @@ export type AthletePerTeamDic = {
 export const HOME = 1;
 export const AWAY = 2;
 
-export enum GameState {
-  WAITING,
+export enum RoundStatus {
+  WAITING_START,
   PLAYING,
   ENDED,
 }
@@ -105,17 +107,17 @@ export interface RoundResult {
   winner?: typeof HOME | typeof AWAY;
 }
 
-export interface MatchScoreUpdate {
-  matchStatus: MatchStatus;
-  gameState: GameState;
-  home: Score;
-  away: Score;
-  currentRound: number;
-  result: RoundResult;
-  teamRunner: typeof HOME | typeof AWAY;
-}
-
 export interface MatchScore {
   HOME: Score;
   AWAY: Score;
+}
+
+export interface MatchState {
+  status: MatchStatus;
+  round: RoundStatus | undefined;
+  roundNumber: number;
+  home: Score;
+  away: Score;
+  runner: typeof HOME | typeof AWAY | undefined;
+  escaped: boolean | undefined;
 }

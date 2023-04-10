@@ -1,12 +1,13 @@
 import fs from 'fs';
-import { app, WebContents } from 'electron';
+import { WebContents } from 'electron';
 import log from 'electron-log';
 import sqlite3 from 'sqlite3';
 import path from 'path';
 
-const RESOURCES_PATH = app.isPackaged
-  ? path.join(process.resourcesPath, 'assets')
-  : path.join(__dirname, '../../assets');
+const RESOURCES_PATH =
+  process.env.NODE_ENV === 'production'
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(__dirname, '../../assets');
 
 const getAssetPath = (...paths: string[]): string => {
   return path.join(RESOURCES_PATH, ...paths);

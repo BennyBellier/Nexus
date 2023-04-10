@@ -11,7 +11,7 @@ import {
   MatchScoreUpdate,
   HOME,
   AWAY,
-  GameState,
+  RoundState,
   MatchStatus,
   RoundResult,
   MatchScore,

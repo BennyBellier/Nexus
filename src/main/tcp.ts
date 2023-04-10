@@ -69,9 +69,12 @@ export class TCPServer {
     });
   }
 
-  public stop(): void {
-    this.server.close(() => {
-      log.info('Server stopped');
+  public stop(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      this.server.close(() => {
+        log.info('Server stopped');
+        resolve();
+      });
     });
   }
 

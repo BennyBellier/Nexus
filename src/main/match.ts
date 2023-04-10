@@ -8,24 +8,14 @@ class ChaseTagManager {
 
   private endTime: number | null = null;
 
-  private currentRound: number = 1;
-
-  private teamRunner: typeof NexusTypes.HOME | typeof NexusTypes.AWAY =
-    NexusTypes.AWAY;
-
-  private gameState: NexusTypes.GameState = NexusTypes.GameState.WAITING;
-
-  private matchStatus: NexusTypes.MatchStatus =
-    NexusTypes.MatchStatus.NOT_READY;
-
-  private roundResult: NexusTypes.RoundResult = {
-    escaped: false,
-    winner: NexusTypes.HOME,
-  };
-
-  private score: NexusTypes.MatchScore = {
-    HOME: { score: 0, faults: 0, timeout: 0 },
-    AWAY: { score: 0, faults: 0, timeout: 0 },
+  private matchState: NexusTypes.MatchState = {
+    status: NexusTypes.MatchStatus.NOT_READY,
+    round: undefined,
+    roundNumber: 0,
+    home: { score: 0, faults: 0, timeout: 0 },
+    away: { score: 0, faults: 0, timeout: 0 },
+    runner: undefined,
+    escaped: undefined,
   };
 
   private webContents: WebContents;
@@ -35,48 +25,68 @@ class ChaseTagManager {
   constructor(webContents: WebContents) {
     ipcMain.on('match:start-stop', this.handleStartStopMatch.bind(this));
     ipcMain.on('match:next-round', this.handleNextRound.bind(this));
-    ipcMain.on('match:init', this.initMatch.bind(this));
+    ipcMain.on('match:init', this.init.bind(this));
     ipcMain.on('match:pageLoaded', this.sendScoreUpdate.bind(this));
+    ipcMain.on('match:set-team', this.setTeam.bind(this));
     ipcMain.on('tcp:stop', this.handleStopMatch.bind(this));
     this.webContents = webContents;
   }
 
-  public initMatch(): void {
-    if (this.matchStatus !== NexusTypes.MatchStatus.NOT_READY) return;
+  public init(): void {
+    if (this.matchState.status === NexusTypes.MatchStatus.ENDED) this.reset();
+    if (this.matchState.status !== NexusTypes.MatchStatus.NOT_READY) return;
+    if (!this.teamSet) return;
+    if (this.matchState.runner === undefined) return;
 
-    this.score = {
-      HOME: { score: 0, faults: 0, timeout: 0 },
-      AWAY: { score: 0, faults: 0, timeout: 0 },
+    this.matchState.status = NexusTypes.MatchStatus.READY;
+    this.matchState.round = NexusTypes.RoundStatus.WAITING_START;
+    this.matchState.roundNumber = 1;
+
+    this.webContents.send('match:score-update', this.matchState);
+  }
+
+  public reset(): void {
+    this.matchState = {
+      status: NexusTypes.MatchStatus.NOT_READY,
+      round: undefined,
+      roundNumber: 0,
+      home: { score: 0, faults: 0, timeout: 0 },
+      away: { score: 0, faults: 0, timeout: 0 },
+      runner: undefined,
+      escaped: undefined,
     };
+  }
 
-    this.webContents.send('match:score-update', {
-      matchStatus: NexusTypes.MatchStatus.READY,
-      gameState: NexusTypes.GameState.WAITING,
-      score: this.score,
-    });
-    this.matchStatus = NexusTypes.MatchStatus.READY;
+  public setTeam(): void {
+    this.teamSet = true;
   }
 
   public handleStartStopMatch(): void {
-    if (this.gameState === NexusTypes.GameState.WAITING) {
-      this.gameState = NexusTypes.GameState.PLAYING;
+    if (this.matchState.mat === NexusTypes.MatchStatus.NOT_READY) return;
+
+    if (this.matchStatus === NexusTypes.MatchStatus.READY) {
+      this.matchStatus = NexusTypes.MatchStatus.STARTED;
+    }
+
+    if (this.gameState === NexusTypes.RoundState.WAITING_START) {
+      this.gameState = NexusTypes.RoundState.PLAYING;
       this.startRound();
-    } else if (this.gameState === NexusTypes.GameState.PLAYING) {
-      this.gameState = NexusTypes.GameState.ENDED;
+    } else if (this.gameState === NexusTypes.RoundState.PLAYING) {
+      this.gameState = NexusTypes.RoundState.ENDED;
       this.stopRound();
       this.sendScoreUpdate();
     }
   }
 
   private handleStopMatch(): void {
-    if (this.gameState === NexusTypes.GameState.PLAYING)
+    if (this.gameState === NexusTypes.RoundState.PLAYING)
       this.handleStartStopMatch();
   }
 
-  private handleNextRound(): void {
-    if (this.gameState === NexusTypes.GameState.ENDED) {
+  public handleNextRound(): void {
+    if (this.gameState === NexusTypes.RoundState.ENDED) {
       this.sendTimeUpdate(0);
-      this.gameState = NexusTypes.GameState.WAITING;
+      this.gameState = NexusTypes.RoundState.WAITING_START;
       this.currentRound += 1;
       this.teamRunner =
         this.currentRound % 2 === 0 ? NexusTypes.AWAY : NexusTypes.HOME;
@@ -109,7 +119,7 @@ class ChaseTagManager {
     if (timeElapsedInCentiseconds >= 2000) {
       this.stopRound();
       this.handleRoundEnded({ escaped: true });
-      this.gameState = NexusTypes.GameState.ENDED;
+      this.gameState = NexusTypes.RoundState.ENDED;
     }
   }
 
@@ -134,6 +144,10 @@ class ChaseTagManager {
       teamRunner: this.teamRunner,
     };
     this.webContents.send('match:score-update', scoreUpdate);
+  }
+
+  public getRoundState(): NexusTypes.RoundState {
+    return this.gameState;
   }
 
   public getMatchStatus(): NexusTypes.MatchStatus {

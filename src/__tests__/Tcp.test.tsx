@@ -38,8 +38,8 @@ describe('TCPServer Running', () => {
     });
   });
 
-  afterEach(() => {
-    server.stop();
+  afterEach(async () => {
+    await server.stop();
     jest.resetAllMocks();
   });
 
