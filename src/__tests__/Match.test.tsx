@@ -28,28 +28,35 @@ describe('ChaseTagManager', () => {
       const sendMock = jest.fn();
       webContents.send = sendMock;
 
-      chaseTagManager.initMatch();
-
-      expect(chaseTagManager.getMatchStatus()).toBe(
-        NexusTypes.MatchStatus.READY
-      );
-      expect(chaseTagManager.getMatchScore()).toEqual({
-        HOME: { score: 0, faults: 0, timeout: 0 },
-        AWAY: { score: 0, faults: 0, timeout: 0 },
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.NOT_READY,
+        round: undefined,
+        roundNumber: 0,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: undefined,
+        escaped: undefined,
       });
-      expect(sendMock).toHaveBeenCalledWith('match:score-update', {
-        matchStatus: NexusTypes.MatchStatus.READY,
-        gameState: NexusTypes.RoundState.WAITING_START,
-        score: {
-          HOME: { score: 0, faults: 0, timeout: 0 },
-          AWAY: { score: 0, faults: 0, timeout: 0 },
-        },
+
+      chaseTagManager.teamsFixed();
+      chaseTagManager.setRunner(NexusTypes.HOME);
+
+      chaseTagManager.init();
+
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.READY,
+        round: NexusTypes.RoundStatus.WAITING_START,
+        roundNumber: 1,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.HOME,
+        escaped: undefined,
       });
     });
 
     it('should not do anything if match status is not not_ready', () => {
       chaseTagManager.setMatchStatus(NexusTypes.MatchStatus.STARTED);
-      chaseTagManager.initMatch();
+      chaseTagManager.init();
 
       expect(chaseTagManager.getMatchStatus()).toBe(
         NexusTypes.MatchStatus.STARTED
@@ -58,177 +65,142 @@ describe('ChaseTagManager', () => {
   });
 
   describe('respect Chase tag rules', () => {
-    //   it("shouldn't change score, refeering to rules of the game", () => {
-    //     const sendMock = jest.fn();
-    //     webContents.send = sendMock;
-
-    //     chaseTagManager.initMatch();
-
-    //     chaseTagManager.handleStartStopMatch();
-    //     setTimeout(() => {
-    //       chaseTagManager.handleStartStopMatch();
-    //       expect(chaseTagManager.getMatchStatus()).toBe(
-    //         NexusTypes.MatchStatus.READY
-    //       );
-    //       expect(chaseTagManager.getCurrentRound()).toBe(1);
-    //       expect(chaseTagManager.getMatchScore()).toEqual({
-    //         HOME: { score: 0, faults: 0, timeout: 0 },
-    //         AWAY: { score: 0, faults: 0, timeout: 0 },
-    //       });
-    //       expect(sendMock.mock.calls.length).toBe(2);
-    //       expect(sendMock.mock.calls[1]).toHaveBeenCalledWith(
-    //         'match:score-update',
-    //         {
-    //           matchStatus: NexusTypes.MatchStatus.READY,
-    //           gameState: NexusTypes.RoundState.WAITING_START,
-    //           home: { score: 0, faults: 0, timeout: 0 },
-    //           away: { score: 0, faults: 0, timeout: 0 },
-    //           currentRound: 1,
-    //           result: { escaped: false, winner: NexusTypes.HOME },
-    //           teamRunner: NexusTypes.AWAY,
-    //         }
-    //       );
-    //     }, 500);
-    //   });
-
-    it('should have a match status of not ready and round state to wainting start', () => {
-      expect(chaseTagManager.getMatchStatus()).toBe(
-        NexusTypes.MatchStatus.NOT_READY
-      );
-    });
-
-    it('should have a match status of ready and round state to wainting start', () => {
+    beforeEach(() => {
       const sendMock = jest.fn();
       webContents.send = sendMock;
 
-      chaseTagManager.initMatch();
+      chaseTagManager.teamsFixed();
+      chaseTagManager.setRunner(NexusTypes.HOME);
 
-      expect(chaseTagManager.getMatchStatus()).toBe(
-        NexusTypes.MatchStatus.READY
-      );
-      expect(chaseTagManager.getRoundState()).toBe(
-        NexusTypes.RoundState.WAITING_START
-      );
+      chaseTagManager.init();
     });
 
-    it('should not update score', () => {
-      const sendMock = jest.fn();
-      webContents.send = sendMock;
-
-      chaseTagManager.initMatch();
-
-      chaseTagManager.handleStartStopMatch();
-
-      expect(chaseTagManager.getMatchStatus()).toBe(
-        NexusTypes.MatchStatus.STARTED
-      );
-      expect(chaseTagManager.getRoundState()).toBe(
-        NexusTypes.RoundState.PLAYING
-      );
-
-      chaseTagManager.handleStartStopMatch();
-      expect(chaseTagManager.getRoundState()).toBe(NexusTypes.RoundState.ENDED);
-      expect(chaseTagManager.getMatchScore()).toEqual({
-        HOME: { score: 0, faults: 0, timeout: 0 },
-        AWAY: { score: 0, faults: 0, timeout: 0 },
-      });
-    });
-
-    it('should update home score', () => {
-      const sendMock = jest.fn();
-      webContents.send = sendMock;
-
-      chaseTagManager.initMatch();
-
-      chaseTagManager.handleStartStopMatch();
+    it('should update home score and not change team runner', () => {
+      chaseTagManager.handleStartStop();
 
       jest.advanceTimersByTime(20000);
 
-      expect(chaseTagManager.getRoundState()).toBe(NexusTypes.RoundState.ENDED);
-      expect(chaseTagManager.getMatchScore()).toEqual({
-        HOME: { score: 1, faults: 0, timeout: 0 },
-        AWAY: { score: 0, faults: 0, timeout: 0 },
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.STARTED,
+        round: NexusTypes.RoundStatus.ENDED,
+        roundNumber: 1,
+        home: { score: 1, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.HOME,
+        escaped: true,
       });
     });
 
     it('should not update round number when match not start', () => {
-      const sendMock = jest.fn();
-      webContents.send = sendMock;
-
-      chaseTagManager.initMatch();
-
       chaseTagManager.handleNextRound();
 
-      expect(chaseTagManager.getCurrentRound()).toBe(1);
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.READY,
+        round: NexusTypes.RoundStatus.WAITING_START,
+        roundNumber: 1,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.HOME,
+        escaped: undefined,
+      });
     });
 
     it('should not update round number when round not ended', () => {
-      const sendMock = jest.fn();
-      webContents.send = sendMock;
-
-      chaseTagManager.initMatch();
-
-      chaseTagManager.handleStartStopMatch();
+      chaseTagManager.handleStartStop();
 
       chaseTagManager.handleNextRound();
 
-      expect(chaseTagManager.getCurrentRound()).toBe(1);
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.STARTED,
+        round: NexusTypes.RoundStatus.PLAYING,
+        roundNumber: 1,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.HOME,
+        escaped: false,
+      });
     });
 
-    it('should update round number', () => {
-      const sendMock = jest.fn();
-      webContents.send = sendMock;
-
-      chaseTagManager.initMatch();
-
-      chaseTagManager.handleStartStopMatch();
+    it('should update round number and change team runner', () => {
+      chaseTagManager.handleStartStop();
 
       jest.advanceTimersByTime(2000);
 
-      chaseTagManager.handleStartStopMatch();
+      chaseTagManager.handleStartStop();
 
       chaseTagManager.handleNextRound();
 
-      expect(chaseTagManager.getCurrentRound()).toBe(2);
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.STARTED,
+        round: NexusTypes.RoundStatus.WAITING_START,
+        roundNumber: 2,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.AWAY,
+        escaped: false,
+      });
     });
 
-    it('should update away score', () => {
-      const sendMock = jest.fn();
-      webContents.send = sendMock;
-
-      chaseTagManager.initMatch();
-
-      chaseTagManager.handleStartStopMatch();
+    it('should update away score and change team runner once', () => {
+      chaseTagManager.handleStartStop();
 
       jest.advanceTimersByTime(2000);
 
-      chaseTagManager.handleStartStopMatch();
+      chaseTagManager.handleStartStop();
 
       chaseTagManager.handleNextRound();
 
-      expect(chaseTagManager.getCurrentRound()).toBe(2);
-
-      chaseTagManager.handleStartStopMatch();
+      chaseTagManager.handleStartStop();
 
       jest.advanceTimersByTime(20000);
 
-      expect(chaseTagManager.getRoundState()).toBe(NexusTypes.RoundState.ENDED);
-      expect(chaseTagManager.getMatchScore()).toEqual({
-        HOME: { score: 0, faults: 0, timeout: 0 },
-        AWAY: { score: 1, faults: 0, timeout: 0 },
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.STARTED,
+        round: NexusTypes.RoundStatus.ENDED,
+        roundNumber: 2,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 1, faults: 0, timeout: 0 },
+        runner: NexusTypes.AWAY,
+        escaped: true,
       });
-      expect(sendMock.mock.calls).toHaveBeenLastCalledWith(
-        'match:score-update',
-        {
-          matchStatus: NexusTypes.MatchStatus.STARTED,
-          gameState: NexusTypes.RoundState.ENDED,
-          home: { score: 0, faults: 0, timeout: 0 },
-          away: { score: 1, faults: 0, timeout: 0 },
-          currentRound: 2,
-          result: { escaped: true, winner: NexusTypes.AWAY },
-          teamRunner: NexusTypes.AWAY,
-        }
-      );
+    });
+
+    it('should change team runner twice and not change scores', () => {
+      chaseTagManager.handleStartStop();
+
+      jest.advanceTimersByTime(2000);
+
+      chaseTagManager.handleStartStop();
+
+      chaseTagManager.handleNextRound();
+
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.STARTED,
+        round: NexusTypes.RoundStatus.WAITING_START,
+        roundNumber: 2,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.AWAY,
+        escaped: false,
+      });
+
+      chaseTagManager.handleStartStop();
+
+      jest.advanceTimersByTime(2000);
+
+      chaseTagManager.handleStartStop();
+
+      chaseTagManager.handleNextRound();
+
+      expect(chaseTagManager.getMatchState()).toStrictEqual({
+        status: NexusTypes.MatchStatus.STARTED,
+        round: NexusTypes.RoundStatus.WAITING_START,
+        roundNumber: 3,
+        home: { score: 0, faults: 0, timeout: 0 },
+        away: { score: 0, faults: 0, timeout: 0 },
+        runner: NexusTypes.HOME,
+        escaped: false,
+      });
     });
   });
 });

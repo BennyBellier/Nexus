@@ -1,11 +1,7 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import {
-  DashboardDescription,
-  MatchInitData,
-  MatchScoreUpdate,
-} from './Utils/Types';
+import * as NexusTypes from './Utils/Types';
 
 export type Channels = 'ipc-example';
 export type DBChannels = 'db';
@@ -71,10 +67,10 @@ const matchHandler = {
   loaded: () => {
     ipcRenderer.send('match:pageLoaded');
   },
-  init: (data: MatchInitData) => {
+  init: (data: NexusTypes.MatchInitData) => {
     ipcRenderer.send('match:init', data);
   },
-  scoreUpdated: (func: (score: MatchScoreUpdate) => void) => {
+  scoreUpdated: (func: (score: NexusTypes.MatchState) => void) => {
     const subscription = (_event: IpcRendererEvent, score: any) => func(score);
     ipcRenderer.on('match:score-update', subscription);
 
@@ -113,10 +109,12 @@ const nexusHandler = {
       ipcRenderer.removeListener('nexus:getAssetspath', subscription);
     };
   },
-  descriptionUpdated: (func: (desc: DashboardDescription) => void) => {
+  descriptionUpdated: (
+    func: (desc: NexusTypes.DashboardDescription) => void
+  ) => {
     const subscription = (
       _event: IpcRendererEvent,
-      desc: DashboardDescription
+      desc: NexusTypes.DashboardDescription
     ) => func(desc);
     ipcRenderer.on('nexus:descriptionUpdated', subscription);
 

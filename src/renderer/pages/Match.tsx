@@ -6,31 +6,24 @@ import { VscClose } from 'react-icons/vsc';
 import { GrStatusGoodSmall } from 'react-icons/gr';
 import { MdOutlineAutoFixHigh } from 'react-icons/md';
 import Main from '../components/Main';
-import {
-  Score,
-  MatchScoreUpdate,
-  HOME,
-  AWAY,
-  RoundState,
-  MatchStatus,
-  RoundResult,
-  MatchScore,
-} from '../../main/Utils/Types';
+import * as NexusTypes from '../../main/Utils/Types';
 
 export default function Match() {
   const maxRound = 12;
   // const phase = 'Phase de poules';
   const [timer, setTimer] = useState('00:00');
   const [percent, setPercent] = useState('0.00');
-  const [isEscaped, setEscaped] = useState(false);
+  const [isEscaped, setEscaped] = useState<boolean | undefined>();
   const [currentRound, setCurrentRound] = useState(0);
 
   const [homeName, setHomeName] = useState<String>();
   const [awayName, setAwayName] = useState<String>();
 
-  const [home, setHome] = useState<Score>();
-  const [away, setAway] = useState<Score>();
-  const [runner, setRunner] = useState<typeof HOME | typeof AWAY>(HOME);
+  const [home, setHome] = useState<NexusTypes.Score>();
+  const [away, setAway] = useState<NexusTypes.Score>();
+  const [runner, setRunner] = useState<
+    typeof NexusTypes.HOME | typeof NexusTypes.AWAY | undefined
+  >(NexusTypes.HOME);
 
   const [serverIP, setServerIP] = useState('');
   const [QrDisplayed, setQrDisplayed] = useState(false);
@@ -64,12 +57,12 @@ export default function Match() {
   }, []);
 
   useEffect(() => {
-    return window.match.scoreUpdated((score: MatchScoreUpdate) => {
-      setHome(score.home);
-      setAway(score.away);
-      setEscaped(score.result.escaped);
-      setCurrentRound(score.currentRound);
-      setRunner(score.teamRunner);
+    return window.match.scoreUpdated((match: NexusTypes.MatchState) => {
+      setHome(match.home);
+      setAway(match.away);
+      setEscaped(match.escaped);
+      setCurrentRound(match.roundNumber);
+      setRunner(match.runner);
     });
   }, []);
 
@@ -189,7 +182,7 @@ export default function Match() {
         {/* HOME */}
         <div
           className={` ${
-            runner === HOME ? '' : 'shadow-cyan-200'
+            runner === NexusTypes.HOME ? '' : 'shadow-cyan-200'
           } flex flex-col items-center gap-8 p-5 shadow-2xl bg-white rounded-2xl scale-150 select-none`}
         >
           <span className="text-3xl">{homeName}</span>
@@ -220,7 +213,7 @@ export default function Match() {
         {/* AWAY */}
         <div
           className={` ${
-            runner === AWAY ? '' : 'shadow-cyan-200'
+            runner === NexusTypes.AWAY ? '' : 'shadow-cyan-200'
           } flex flex-col items-center gap-8 p-5 shadow-2xl bg-white rounded-2xl scale-150 select-none`}
         >
           <span className="text-3xl">{awayName}</span>
